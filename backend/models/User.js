@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, match: [/^\S+@\S+\.\S+$/, 'Valid email is required'] },
     role: { type: String, enum: ['Admin', 'Manager', 'Vendor', 'QC Team'], required: true },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
+    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     passwordHash: { type: String, required: true, select: false },
     passwordSalt: { type: String, required: true, select: false },
     createdBy: { type: String, default: 'system', trim: true },

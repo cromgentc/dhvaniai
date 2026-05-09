@@ -10,34 +10,48 @@ const defaultUsers = [
 export async function seedUsers() {
   const syncDefaultPasswords = process.env.SYNC_DEFAULT_USER_PASSWORDS === 'true'
 
-  await Promise.all(
-    defaultUsers.map(async (item) => {
-      const existingUser = await User.findOne({ email: item.email }).select('+passwordHash +passwordSalt')
+  for (const item of defaultUsers) {
+    const existingUser = await User.findOne({ email: item.email }).select('+passwordHash +passwordSalt')
 
-      if (existingUser) {
-        existingUser.name = item.name
-        existingUser.role = item.role
-        existingUser.status = 'Active'
-        existingUser.updatedBy = 'system'
+    if (existingUser) {
+      existingUser.name = item.name
+      existingUser.role = item.role
+      existingUser.status = 'Active'
+      existingUser.updatedBy = 'system'
 
-        if (syncDefaultPasswords) {
-          existingUser.setPassword(item.password)
-        }
-
-        await existingUser.save()
-        return
+      if (syncDefaultPasswords) {
+        existingUser.setPassword(item.password)
       }
 
-      const user = new User({
-        name: item.name,
-        email: item.email,
-        role: item.role,
-        status: 'Active',
-        createdBy: 'system',
-        updatedBy: 'system',
-      })
-      user.setPassword(item.password)
-      await user.save()
-    }),
-  )
+      await existingUser.save()
+      continue
+    }
+
+    const user = new User({
+      name: item.name,
+      email: item.email,
+      role: item.role,
+      status: 'Active',
+      createdBy: 'system',
+      updatedBy: 'system',
+    })
+    user.setPassword(item.password)
+    await user.save()
+  }
+
+  const manager = await User.findOne({ email: 'manager@dhvani.ai' })
+  const vendor = await User.findOne({ email: 'vendor@dhvani.ai' })
+  const qcTeam = await User.findOne({ email: 'qc@dhvani.ai' })
+
+  if (manager && vendor) {
+    vendor.managerId = manager._id
+    vendor.vendorId = null
+    await vendor.save()
+  }
+
+  if (manager && vendor && qcTeam) {
+    qcTeam.managerId = manager._id
+    qcTeam.vendorId = vendor._id
+    await qcTeam.save()
+  }
 }

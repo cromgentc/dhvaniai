@@ -123,6 +123,8 @@ const defaultUserForm = {
   email: '',
   password: '',
   role: 'Manager',
+  managerId: '',
+  vendorId: '',
   status: 'Active',
 }
 const socialPlatforms = ['LinkedIn', 'Facebook', 'Instagram', 'X / Twitter', 'YouTube', 'WhatsApp', 'Telegram', 'GitHub']
@@ -257,7 +259,7 @@ function AdminPanel() {
               ) : activePage === 'applications' ? (
                 <ApplicationsPage notify={notify} />
               ) : activePage === 'users' ? (
-                <UsersPage notify={notify} />
+                <UsersPage adminUser={adminUser} notify={notify} />
               ) : activePage === 'settings' ? (
                 <SettingsPage notify={notify} />
               ) : (
@@ -1429,7 +1431,7 @@ function LeadDetailModal({ lead, onClose }) {
   )
 }
 
-function UsersPage({ notify }) {
+function UsersPage({ adminUser, notify }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -1501,7 +1503,7 @@ function UsersPage({ notify }) {
           <div>
             <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Access Control</p>
             <h2 className="mt-2 text-3xl font-black text-white">User Management</h2>
-            <p className="mt-2 text-slate-400">Create and manage Admin, Manager, Vendor, and QC Team users from backend API.</p>
+            <p className="mt-2 text-slate-400">Create and manage users with Manager, Vendor, and QC Team hierarchy access.</p>
           </div>
           <button onClick={() => openModal()} className="admin-primary-btn"><Plus size={16} /> Add User</button>
         </div>
@@ -1526,10 +1528,10 @@ function UsersPage({ notify }) {
 
         <div className="mt-6 overflow-x-auto">
           {loading ? <SkeletonRows /> : users.length ? (
-            <table className="w-full min-w-[850px] text-left">
+            <table className="w-full min-w-[980px] text-left">
               <thead>
                 <tr className="border-b border-white/10 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  {['Name', 'Email', 'Role', 'Status', 'Updated', 'Actions'].map((head) => <th key={head} className="px-4 py-4">{head}</th>)}
+                  {['Name', 'Email', 'Role', 'Manager', 'Vendor', 'Status', 'Updated', 'Actions'].map((head) => <th key={head} className="px-4 py-4">{head}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -1538,6 +1540,8 @@ function UsersPage({ notify }) {
                     <td className="px-4 py-4 font-black text-white">{user.name}</td>
                     <td className="px-4 py-4">{user.email}</td>
                     <td className="px-4 py-4">{user.role}</td>
+                    <td className="px-4 py-4">{user.managerName || '-'}</td>
+                    <td className="px-4 py-4">{user.vendorName || '-'}</td>
                     <td className="px-4 py-4">
                       <select value={user.status} onChange={(event) => updateStatus(user, event.target.value)} className={`rounded-full px-3 py-1 text-xs font-black outline-none ${statusStyles[user.status] || statusStyles.Pending}`}>
                         {['Active', 'Inactive'].map((item) => <option key={item} className="bg-[#071024] text-white">{item}</option>)}
@@ -1557,21 +1561,38 @@ function UsersPage({ notify }) {
           ) : <EmptyState title="No users found" action="Add User" onAction={() => openModal()} />}
         </div>
       </div>
-      <UserFormModal editingUser={editingUser} isOpen={modalOpen} notify={notify} onClose={() => setModalOpen(false)} onSaved={fetchUsers} />
+      <UserFormModal adminUser={adminUser} editingUser={editingUser} isOpen={modalOpen} notify={notify} onClose={() => setModalOpen(false)} onSaved={fetchUsers} users={users} />
     </div>
   )
 }
 
-function UserFormModal({ editingUser, isOpen, notify, onClose, onSaved }) {
+function UserFormModal({ adminUser, editingUser, isOpen, notify, onClose, onSaved, users }) {
   const [form, setForm] = useState(defaultUserForm)
   const [saving, setSaving] = useState(false)
+  const activeRole = adminUser?.role || 'Admin'
+  const baseRoleOptions = activeRole === 'Admin' ? ['Admin', 'Manager', 'Vendor', 'QC Team'] : activeRole === 'Manager' ? ['Vendor', 'QC Team'] : ['QC Team']
+  const roleOptions = [...new Set([editingUser?.role, ...baseRoleOptions].filter(Boolean))]
+  const managerOptions = users.filter((user) => user.role === 'Manager')
+  const vendorOptions = users.filter((user) => user.role === 'Vendor' && (!form.managerId || user.managerId === form.managerId || user._id === form.vendorId))
 
   useEffect(() => {
     if (!isOpen) return
-    setForm(editingUser ? { ...defaultUserForm, ...editingUser, password: '' } : defaultUserForm)
-  }, [editingUser, isOpen])
+    const nextForm = editingUser ? { ...defaultUserForm, ...editingUser, password: '' } : { ...defaultUserForm, role: roleOptions[0] || 'QC Team' }
+    if (activeRole === 'Manager') nextForm.managerId = adminUser?._id || ''
+    if (activeRole === 'Vendor') {
+      nextForm.vendorId = adminUser?._id || ''
+      nextForm.managerId = adminUser?.managerId || ''
+    }
+    setForm(nextForm)
+  }, [activeRole, adminUser, editingUser, isOpen])
 
-  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }))
+  const update = (field, value) => setForm((current) => {
+    const next = { ...current, [field]: value }
+    if (field === 'role' && ['Admin', 'Manager'].includes(value)) next.vendorId = ''
+    if (field === 'role' && value === 'Admin') next.managerId = ''
+    if (field === 'managerId') next.vendorId = ''
+    return next
+  })
 
   const save = async () => {
     if (!form.name.trim()) return notify('Name is required')
@@ -1611,7 +1632,23 @@ function UserFormModal({ editingUser, isOpen, notify, onClose, onSaved }) {
           <FieldBlock label="Name"><input className="admin-input" value={form.name} onChange={(event) => update('name', event.target.value)} /></FieldBlock>
           <FieldBlock label="Email"><input className="admin-input" value={form.email} onChange={(event) => update('email', event.target.value)} /></FieldBlock>
           <FieldBlock label={editingUser ? 'New Password (optional)' : 'Password'}><input type="password" className="admin-input" value={form.password} onChange={(event) => update('password', event.target.value)} /></FieldBlock>
-          <FieldBlock label="Role"><select className="admin-input" value={form.role} onChange={(event) => update('role', event.target.value)}>{['Admin', 'Manager', 'Vendor', 'QC Team'].map((item) => <option key={item} className="bg-[#071024]">{item}</option>)}</select></FieldBlock>
+          <FieldBlock label="Role"><select className="admin-input" value={form.role} onChange={(event) => update('role', event.target.value)}>{roleOptions.map((item) => <option key={item} className="bg-[#071024]">{item}</option>)}</select></FieldBlock>
+          {activeRole === 'Admin' && ['Vendor', 'QC Team'].includes(form.role) && (
+            <FieldBlock label="Under Manager">
+              <select className="admin-input" value={form.managerId || ''} onChange={(event) => update('managerId', event.target.value)}>
+                <option value="" className="bg-[#071024]">Select Manager</option>
+                {managerOptions.map((user) => <option key={user._id} value={user._id} className="bg-[#071024]">{user.name}</option>)}
+              </select>
+            </FieldBlock>
+          )}
+          {['Admin', 'Manager'].includes(activeRole) && form.role === 'QC Team' && (
+            <FieldBlock label="Under Vendor">
+              <select className="admin-input" value={form.vendorId || ''} onChange={(event) => update('vendorId', event.target.value)}>
+                <option value="" className="bg-[#071024]">No Vendor</option>
+                {vendorOptions.map((user) => <option key={user._id} value={user._id} className="bg-[#071024]">{user.name}</option>)}
+              </select>
+            </FieldBlock>
+          )}
           <FieldBlock label="Status"><select className="admin-input" value={form.status} onChange={(event) => update('status', event.target.value)}>{['Active', 'Inactive'].map((item) => <option key={item} className="bg-[#071024]">{item}</option>)}</select></FieldBlock>
         </div>
         <button disabled={saving} onClick={save} className="admin-primary-btn mt-6 w-full justify-center">{saving ? 'Saving...' : 'Save User'}</button>

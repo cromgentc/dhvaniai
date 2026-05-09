@@ -26,6 +26,6 @@ export async function adminLogin(req, res) {
   return res.json({
     success: true,
     message: 'Login successful',
-    data: { token, user: { _id: user._id, email: user.email, role: user.role, name: user.name } },
+    data: { token, user: { _id: String(user._id), email: user.email, role: user.role, name: user.name, managerId: user.managerId ? String(user.managerId) : '', vendorId: user.vendorId ? String(user.vendorId) : '' } },
   })
 }
