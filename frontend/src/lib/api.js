@@ -1,11 +1,17 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL || ''
 const fallbackApiUrl = 'https://dhvaniai-3w7k.onrender.com'
+const frontendHosts = ['https://dhvaniai.vercel.app']
 
 function normalizeApiBaseUrl(value) {
   return value.trim().replace(/\/+$/, '').replace(/\/api$/, '')
 }
 
-export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl || fallbackApiUrl)
+function resolveApiBaseUrl(value) {
+  const normalizedValue = normalizeApiBaseUrl(value)
+  return frontendHosts.includes(normalizedValue) ? fallbackApiUrl : normalizedValue
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(configuredApiUrl || fallbackApiUrl)
 
 const apiPath = (path) => `${API_BASE_URL}${path}`
 
