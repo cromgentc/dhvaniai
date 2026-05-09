@@ -1,6 +1,11 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL || ''
+const fallbackApiUrl = import.meta.env.DEV ? 'http://localhost:4000' : ''
 
-export const API_BASE_URL = (configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:4000' : '')).replace(/\/$/, '')
+function normalizeApiBaseUrl(value) {
+  return value.trim().replace(/\/+$/, '').replace(/\/api$/, '')
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl || fallbackApiUrl)
 
 if (!API_BASE_URL && import.meta.env.PROD) {
   console.warn('VITE_API_URL is not configured. Deploy the backend publicly and set VITE_API_URL to that backend URL.')

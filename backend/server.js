@@ -39,6 +39,10 @@ app.use(
 )
 app.use(express.json({ limit: '12mb' }))
 
+app.get('/', (req, res) => {
+  res.json({ ok: true, service: 'dhvani-backend', health: '/api/health' })
+})
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'dhvani-backend' })
 })
