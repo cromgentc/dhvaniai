@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { API_BASE_URL } from '../lib/api.js'
+import { API_ENDPOINTS } from '../lib/api.js'
 
 export const defaultContactSettings = {
   email: 'hello@dhvani.ai',
@@ -21,8 +21,8 @@ export function usePublicSettings() {
     const fetchSettings = async () => {
       try {
         const [contactResponse, socialResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/settings/contact`),
-          fetch(`${API_BASE_URL}/api/settings/social-links`),
+          fetch(API_ENDPOINTS.settings.contact),
+          fetch(API_ENDPOINTS.settings.socialLinks),
         ])
         const [contactResult, socialResult] = await Promise.all([contactResponse.json(), socialResponse.json()])
         if (contactResponse.ok && contactResult.data) {

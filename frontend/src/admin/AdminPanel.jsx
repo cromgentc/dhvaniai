@@ -47,7 +47,7 @@ import {
   vendorPerformance,
 } from './adminData.jsx'
 import { usePublicSettings } from '../hooks/usePublicSettings.js'
-import { API_BASE_URL } from '../lib/api.js'
+import { API_ENDPOINTS } from '../lib/api.js'
 
 const statusStyles = {
   New: 'bg-cyan-400/15 text-cyan-200',
@@ -233,7 +233,7 @@ function LeadsPage({ notify }) {
       if (query) params.set('q', query)
       if (status) params.set('status', status)
       if (type) params.set('type', type)
-      const response = await fetch(`${API_BASE_URL}/api/leads/all?${params.toString()}`)
+      const response = await fetch(`${API_ENDPOINTS.leads.all}?${params.toString()}`)
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch leads')
       setLeads(result.data || [])
@@ -250,7 +250,7 @@ function LeadsPage({ notify }) {
 
   const updateStatus = async (id, nextStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leads/${id}/status`, {
+      const response = await fetch(API_ENDPOINTS.leads.status(id), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus }),
@@ -267,7 +267,7 @@ function LeadsPage({ notify }) {
   const deleteLead = async (id) => {
     if (!window.confirm('Delete this lead?')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leads/${id}`, { method: 'DELETE' })
+      const response = await fetch(API_ENDPOINTS.leads.byId(id), { method: 'DELETE' })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete lead')
       notify('Lead deleted')
@@ -390,7 +390,7 @@ function LegalPagesPage({ notify }) {
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       if (status) params.set('status', status)
-      const response = await fetch(`${API_BASE_URL}/api/legal/all?${params.toString()}`, { headers: authHeaders() })
+      const response = await fetch(`${API_ENDPOINTS.legal.all}?${params.toString()}`, { headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch legal pages')
       setPages(result.data || [])
@@ -418,7 +418,7 @@ function LegalPagesPage({ notify }) {
   const deletePage = async (page) => {
     if (!window.confirm(`Delete "${page.title}"?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/legal/delete/${page._id}`, { method: 'DELETE', headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.legal.delete(page._id), { method: 'DELETE', headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete legal page')
       notify('Legal page deleted')
@@ -430,7 +430,7 @@ function LegalPagesPage({ notify }) {
 
   const updateStatus = async (page, nextStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/legal/status/${page._id}`, {
+      const response = await fetch(API_ENDPOINTS.legal.status(page._id), {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ status: nextStatus }),
@@ -563,7 +563,7 @@ function LegalPageFormModal({ editingPage, isOpen, notify, onClose, onSaved }) {
 
     setSaving(true)
     try {
-      const endpoint = editingPage ? `${API_BASE_URL}/api/legal/update/${editingPage._id}` : `${API_BASE_URL}/api/legal/create`
+      const endpoint = editingPage ? API_ENDPOINTS.legal.update(editingPage._id) : API_ENDPOINTS.legal.create
       const response = await fetch(endpoint, {
         method: editingPage ? 'PUT' : 'POST',
         headers: authHeaders(),
@@ -726,7 +726,7 @@ function JobsPage({ notify }) {
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       if (status) params.set('status', status)
-      const response = await fetch(`${API_BASE_URL}/api/jobs/all?${params.toString()}`, { headers: authHeaders() })
+      const response = await fetch(`${API_ENDPOINTS.jobs.all}?${params.toString()}`, { headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch jobs')
       setJobs(result.data || [])
@@ -748,7 +748,7 @@ function JobsPage({ notify }) {
 
   const updateStatus = async (job, nextStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/jobs/status/${job._id}`, {
+      const response = await fetch(API_ENDPOINTS.jobs.status(job._id), {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ status: nextStatus }),
@@ -765,7 +765,7 @@ function JobsPage({ notify }) {
   const deleteJob = async (job) => {
     if (!window.confirm(`Delete "${job.title}"?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/jobs/delete/${job._id}`, { method: 'DELETE', headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.jobs.delete(job._id), { method: 'DELETE', headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete job')
       notify('Job deleted')
@@ -855,7 +855,7 @@ function JobFormModal({ editingJob, isOpen, notify, onClose, onSaved }) {
     setSaving(true)
     try {
       const isUpdate = Boolean(editingJob?._id)
-      const response = await fetch(isUpdate ? `${API_BASE_URL}/api/jobs/update/${editingJob._id}` : `${API_BASE_URL}/api/jobs/create`, {
+      const response = await fetch(isUpdate ? API_ENDPOINTS.jobs.update(editingJob._id) : API_ENDPOINTS.jobs.create, {
         method: isUpdate ? 'PUT' : 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ ...form, status: nextStatus }),
@@ -909,7 +909,7 @@ function ApplicationsPage({ notify }) {
       if (query) params.set('q', query)
       if (status) params.set('status', status)
       if (jobTitle) params.set('jobTitle', jobTitle)
-      const response = await fetch(`${API_BASE_URL}/api/applications/all?${params.toString()}`, { headers: authHeaders() })
+      const response = await fetch(`${API_ENDPOINTS.applications.all}?${params.toString()}`, { headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch applications')
       setApplications(result.data || [])
@@ -924,7 +924,7 @@ function ApplicationsPage({ notify }) {
 
   const updateStatus = async (application, nextStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/applications/status/${application._id}`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: nextStatus }) })
+      const response = await fetch(API_ENDPOINTS.applications.status(application._id), { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: nextStatus }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to update application')
       notify('Application status updated')
@@ -935,7 +935,7 @@ function ApplicationsPage({ notify }) {
   const deleteApplication = async (application) => {
     if (!window.confirm(`Delete application from ${application.fullName}?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/applications/delete/${application._id}`, { method: 'DELETE', headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.applications.delete(application._id), { method: 'DELETE', headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete application')
       notify('Application deleted')
@@ -1028,7 +1028,7 @@ function BrandingSettingsPage({ notify }) {
   const fetchBranding = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/settings/contact`)
+      const response = await fetch(API_ENDPOINTS.settings.contact)
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to load branding settings')
       setForm({ ...defaultContactForm, ...(result.data || {}) })
@@ -1051,7 +1051,7 @@ function BrandingSettingsPage({ notify }) {
 
     setSaving(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/settings/contact`, {
+      const response = await fetch(API_ENDPOINTS.adminSettings.contact, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify(form),
@@ -1126,7 +1126,7 @@ function ContactSettingsPage({ embedded = false, notify }) {
   const fetchContact = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/settings/contact`)
+      const response = await fetch(API_ENDPOINTS.settings.contact)
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to load contact settings')
       setForm({ ...defaultContactForm, ...(result.data || {}) })
@@ -1151,7 +1151,7 @@ function ContactSettingsPage({ embedded = false, notify }) {
 
     setSaving(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/settings/contact`, {
+      const response = await fetch(API_ENDPOINTS.adminSettings.contact, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify(form),
@@ -1200,7 +1200,7 @@ function SocialLinksPage({ embedded = false, notify }) {
   const fetchLinks = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/settings/social-links`, { headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.adminSettings.socialLinks, { headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to load social links')
       setLinks(result.data || [])
@@ -1222,7 +1222,7 @@ function SocialLinksPage({ embedded = false, notify }) {
 
   const updateStatus = async (link, status) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/settings/social-links/${link._id}/status`, {
+      const response = await fetch(API_ENDPOINTS.adminSettings.socialLinkStatus(link._id), {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ status }),
@@ -1239,7 +1239,7 @@ function SocialLinksPage({ embedded = false, notify }) {
   const deleteLink = async (link) => {
     if (!window.confirm(`Delete ${link.platformName}?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/settings/social-links/${link._id}`, { method: 'DELETE', headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.adminSettings.socialLink(link._id), { method: 'DELETE', headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete social link')
       notify('Social link deleted')
@@ -1300,7 +1300,7 @@ function SocialLinkModal({ editingLink, isOpen, notify, onClose, onSaved }) {
     setSaving(true)
     try {
       const isUpdate = Boolean(editingLink?._id)
-      const response = await fetch(isUpdate ? `${API_BASE_URL}/api/admin/settings/social-links/${editingLink._id}` : `${API_BASE_URL}/api/admin/settings/social-links`, {
+      const response = await fetch(isUpdate ? API_ENDPOINTS.adminSettings.socialLink(editingLink._id) : API_ENDPOINTS.adminSettings.socialLinks, {
         method: isUpdate ? 'PUT' : 'POST',
         headers: authHeaders(),
         body: JSON.stringify(form),
@@ -1389,7 +1389,7 @@ function UsersPage({ notify }) {
       if (query) params.set('q', query)
       if (role) params.set('role', role)
       if (status) params.set('status', status)
-      const response = await fetch(`${API_BASE_URL}/api/users/all?${params.toString()}`, { headers: authHeaders() })
+      const response = await fetch(`${API_ENDPOINTS.users.all}?${params.toString()}`, { headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch users')
       setUsers(result.data || [])
@@ -1411,7 +1411,7 @@ function UsersPage({ notify }) {
 
   const updateStatus = async (user, nextStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/status/${user._id}`, {
+      const response = await fetch(API_ENDPOINTS.users.status(user._id), {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ status: nextStatus }),
@@ -1428,7 +1428,7 @@ function UsersPage({ notify }) {
   const deleteUser = async (user) => {
     if (!window.confirm(`Delete ${user.name}?`)) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/delete/${user._id}`, { method: 'DELETE', headers: authHeaders() })
+      const response = await fetch(API_ENDPOINTS.users.delete(user._id), { method: 'DELETE', headers: authHeaders() })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to delete user')
       notify('User deleted')
@@ -1527,7 +1527,7 @@ function UserFormModal({ editingUser, isOpen, notify, onClose, onSaved }) {
       const isUpdate = Boolean(editingUser?._id)
       const payload = { ...form }
       if (isUpdate && !payload.password) delete payload.password
-      const response = await fetch(isUpdate ? `${API_BASE_URL}/api/users/update/${editingUser._id}` : `${API_BASE_URL}/api/users/create`, {
+      const response = await fetch(isUpdate ? API_ENDPOINTS.users.update(editingUser._id) : API_ENDPOINTS.users.create, {
         method: isUpdate ? 'PUT' : 'POST',
         headers: authHeaders(),
         body: JSON.stringify(payload),
@@ -1576,7 +1576,7 @@ function LoginPage({ onLogin }) {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(API_ENDPOINTS.auth.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
