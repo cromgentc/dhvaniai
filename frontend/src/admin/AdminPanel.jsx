@@ -237,6 +237,7 @@ function AdminPanel() {
       <div className="lg:pl-72">
         <TopHeader
           activeItem={activeItem}
+          adminUser={adminUser}
           darkMode={darkMode}
           onCreate={() => setModalOpen(true)}
           onLogout={logout}
@@ -1772,8 +1773,10 @@ function SidebarContent({ activePage, adminUser, onLogout, setActivePage, setSid
   )
 }
 
-function TopHeader({ activeItem, darkMode, onCreate, onLogout, query, setDarkMode, setQuery, setSidebarOpen }) {
+function TopHeader({ activeItem, adminUser, darkMode, onCreate, onLogout, query, setDarkMode, setQuery, setSidebarOpen }) {
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
+  const displayName = adminUser?.name || 'User'
+  const displayRole = adminUser?.role || 'Admin'
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-[#050816]/80 shadow-glass backdrop-blur-2xl lg:left-72">
@@ -1782,7 +1785,7 @@ function TopHeader({ activeItem, darkMode, onCreate, onLogout, query, setDarkMod
           <Menu />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Admin / {activeItem.label}</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">{displayRole} / {activeItem.label}</p>
           <h1 className="truncate text-2xl font-black text-white">{activeItem.label}</h1>
         </div>
         <div className="hidden max-w-md flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-4 py-3 xl:flex">
@@ -1799,12 +1802,16 @@ function TopHeader({ activeItem, darkMode, onCreate, onLogout, query, setDarkMod
         </button>
         <div className="relative hidden md:block">
           <button onClick={() => setAdminMenuOpen((value) => !value)} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-black text-white">
-            Admin
+            <span className="max-w-32 truncate">{displayName}</span>
             <ChevronDown size={15} className={`transition ${adminMenuOpen ? 'rotate-180' : ''}`} />
           </button>
           <AnimatePresence>
             {adminMenuOpen && (
               <motion.div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-white/10 bg-[#071024] p-2 shadow-glass" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+                <div className="border-b border-white/10 px-3 py-3">
+                  <p className="truncate text-sm font-black text-white">{displayName}</p>
+                  <p className="mt-1 text-xs font-bold text-cyan-200">{displayRole}</p>
+                </div>
                 <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black text-rose-200 transition hover:bg-rose-400/10">
                   <LogOut size={16} />
                   Logout
