@@ -12,6 +12,8 @@ const adminRecordSchema = new mongoose.Schema(
     score: { type: String, default: '', trim: true },
     notes: { type: String, default: '', trim: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     createdBy: { type: String, default: 'system', trim: true },
     updatedBy: { type: String, default: 'system', trim: true },
   },

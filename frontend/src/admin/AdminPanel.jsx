@@ -176,7 +176,7 @@ function getAdminUser() {
 }
 
 function canAccessPage(role, pageId) {
-  const managerHierarchyPages = ['dashboard', 'users', 'vendors', 'dc-team', 'logout']
+  const managerHierarchyPages = ['dashboard', 'users', 'vendors', 'dc-team', 'projects', 'logout']
 
   if (pageId === 'logout') return true
   if (role === 'Admin') return true

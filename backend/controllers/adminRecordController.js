@@ -20,9 +20,45 @@ function cleanPayload(body) {
   }
 }
 
-async function syncLoginUser(module, payload, actorEmail, existingRecord = null) {
+function appRole(req) {
+  return req.user?.appRole || (req.user?.role === 'admin' ? 'Admin' : '')
+}
+
+function actorId(req) {
+  return req.user?.id || null
+}
+
+function scopeFilter(req) {
+  const role = appRole(req)
+  const id = actorId(req)
+  const email = req.user?.email
+
+  if (role === 'Admin') return {}
+  if (role === 'Manager') return { $or: [{ managerId: id }, { createdBy: email }] }
+  if (role === 'Vendor') return { $or: [{ vendorId: id }, { userId: id }, { createdBy: email }] }
+  return { userId: id }
+}
+
+async function ownershipFor(req, module, existingRecord = null) {
+  const role = appRole(req)
+  const id = actorId(req)
+
+  if (role === 'Manager') return { managerId: id, vendorId: null }
+  if (role === 'Vendor') {
+    const vendor = await User.findById(id)
+    return { managerId: vendor?.managerId || existingRecord?.managerId || null, vendorId: id }
+  }
+
+  return {
+    managerId: existingRecord?.managerId || null,
+    vendorId: existingRecord?.vendorId || null,
+  }
+}
+
+async function syncLoginUser(module, payload, req, ownership, existingRecord = null) {
   const role = loginModules[module]
   if (!role) return null
+  const actorEmail = req.user?.email || 'system'
 
   if (!/^\S+@\S+\.\S+$/.test(payload.emailOrId)) {
     throw new Error('Valid login email is required.')
@@ -44,6 +80,8 @@ async function syncLoginUser(module, payload, actorEmail, existingRecord = null)
   user.email = payload.emailOrId
   user.role = role
   user.status = payload.status === 'Inactive' ? 'Inactive' : 'Active'
+  user.managerId = ownership.managerId || null
+  user.vendorId = role === 'QC Team' ? ownership.vendorId || null : null
   user.updatedBy = actorEmail
   if (payload.password) user.setPassword(payload.password)
 
@@ -57,12 +95,13 @@ function moduleFilter(req) {
 
 export async function getAdminRecords(req, res) {
   const { q = '', status = '' } = req.query
-  const filter = moduleFilter(req)
+  const baseFilter = { ...moduleFilter(req), ...scopeFilter(req) }
+  const fieldFilter = {}
 
-  if (!filter.module) return res.status(400).json({ success: false, message: 'Module is required' })
-  if (allowedStatuses.includes(status)) filter.status = status
+  if (!baseFilter.module) return res.status(400).json({ success: false, message: 'Module is required' })
+  if (allowedStatuses.includes(status)) fieldFilter.status = status
   if (q) {
-    filter.$or = [
+    fieldFilter.$or = [
       { name: new RegExp(q, 'i') },
       { emailOrId: new RegExp(q, 'i') },
       { role: new RegExp(q, 'i') },
@@ -72,6 +111,7 @@ export async function getAdminRecords(req, res) {
     ]
   }
 
+  const filter = Object.keys(fieldFilter).length ? { $and: [baseFilter, fieldFilter] } : baseFilter
   const records = await AdminRecord.find(filter).sort({ createdAt: -1 })
   return res.json({ success: true, data: records })
 }
@@ -84,10 +124,11 @@ export async function createAdminRecord(req, res) {
   if (!module) return res.status(400).json({ success: false, message: 'Module is required' })
   if (!payload.name) return res.status(400).json({ success: false, message: 'Name is required' })
   const actorEmail = req.user?.email || 'system'
+  const ownership = await ownershipFor(req, module)
   let userId = null
 
   try {
-    userId = await syncLoginUser(module, payload, actorEmail)
+    userId = await syncLoginUser(module, payload, req, ownership)
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message })
   }
@@ -97,6 +138,7 @@ export async function createAdminRecord(req, res) {
     module,
     ...payload,
     userId,
+    ...ownership,
     createdBy: actorEmail,
     updatedBy: actorEmail,
   })
@@ -109,21 +151,22 @@ export async function updateAdminRecord(req, res) {
   payload.password = String(req.body.password || '')
 
   if (!payload.name) return res.status(400).json({ success: false, message: 'Name is required' })
-  const existingRecord = await AdminRecord.findOne({ _id: req.params.id, ...moduleFilter(req) })
+  const existingRecord = await AdminRecord.findOne({ _id: req.params.id, ...moduleFilter(req), ...scopeFilter(req) })
   if (!existingRecord) return res.status(404).json({ success: false, message: 'Record not found' })
   const actorEmail = req.user?.email || 'system'
+  const ownership = await ownershipFor(req, existingRecord.module, existingRecord)
   let userId = existingRecord.userId
 
   try {
-    userId = await syncLoginUser(existingRecord.module, payload, actorEmail, existingRecord)
+    userId = await syncLoginUser(existingRecord.module, payload, req, ownership, existingRecord)
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message })
   }
   delete payload.password
 
   const record = await AdminRecord.findOneAndUpdate(
-    { _id: req.params.id, ...moduleFilter(req) },
-    { ...payload, userId, updatedBy: actorEmail },
+    { _id: req.params.id, ...moduleFilter(req), ...scopeFilter(req) },
+    { ...payload, userId, ...ownership, updatedBy: actorEmail },
     { new: true, runValidators: true },
   )
 
@@ -132,7 +175,7 @@ export async function updateAdminRecord(req, res) {
 }
 
 export async function deleteAdminRecord(req, res) {
-  const record = await AdminRecord.findOneAndDelete({ _id: req.params.id, ...moduleFilter(req) })
+  const record = await AdminRecord.findOneAndDelete({ _id: req.params.id, ...moduleFilter(req), ...scopeFilter(req) })
   if (!record) return res.status(404).json({ success: false, message: 'Record not found' })
   return res.json({ success: true, message: 'Record deleted successfully' })
 }
