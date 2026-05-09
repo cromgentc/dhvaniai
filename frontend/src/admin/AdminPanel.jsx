@@ -176,7 +176,7 @@ function getAdminUser() {
 }
 
 function canAccessPage(role, pageId) {
-  const managerHierarchyPages = ['dashboard', 'users', 'vendors', 'dc-team', 'projects', 'logout']
+  const managerHierarchyPages = ['dashboard', 'users', 'vendors', 'dc-team', 'logout']
 
   if (pageId === 'logout') return true
   if (role === 'Admin') return true
@@ -2153,6 +2153,7 @@ function DataTable({ loading, onDelete, onEdit, rows }) {
 const defaultAdminRecordForm = {
   name: '',
   emailOrId: '',
+  password: '',
   role: 'Vendor',
   project: '',
   language: '',
@@ -2164,16 +2165,23 @@ const defaultAdminRecordForm = {
 function ModalForm({ activeItem, editingRecord, isOpen, notify, onClose, onSaved }) {
   const [form, setForm] = useState(defaultAdminRecordForm)
   const [saving, setSaving] = useState(false)
+  const shouldCreateLogin = ['vendors', 'dc-team'].includes(activeItem.id)
+  const loginRole = activeItem.id === 'vendors' ? 'Vendor' : activeItem.id === 'dc-team' ? 'QC Team' : form.role
 
   useEffect(() => {
     if (!isOpen) return
-    setForm(editingRecord ? { ...defaultAdminRecordForm, ...editingRecord } : defaultAdminRecordForm)
-  }, [editingRecord, isOpen])
+    const nextForm = editingRecord ? { ...defaultAdminRecordForm, ...editingRecord, password: '' } : { ...defaultAdminRecordForm }
+    if (activeItem.id === 'vendors') nextForm.role = 'Vendor'
+    if (activeItem.id === 'dc-team') nextForm.role = 'QC Team'
+    setForm(nextForm)
+  }, [activeItem.id, editingRecord, isOpen])
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }))
 
   const save = async () => {
     if (!form.name.trim()) return notify('Name is required')
+    if (shouldCreateLogin && !/^\S+@\S+\.\S+$/.test(form.emailOrId)) return notify('Valid email is required for login')
+    if (shouldCreateLogin && !editingRecord && !form.password.trim()) return notify('Password is required for login')
 
     setSaving(true)
     try {
@@ -2206,8 +2214,9 @@ function ModalForm({ activeItem, editingRecord, isOpen, notify, onClose, onSaved
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <input className="admin-input" placeholder="Name" value={form.name} onChange={(event) => update('name', event.target.value)} />
-              <input className="admin-input" placeholder="Email / ID" value={form.emailOrId} onChange={(event) => update('emailOrId', event.target.value)} />
-              <select className="admin-input" value={form.role} onChange={(event) => update('role', event.target.value)}><option>Admin</option><option>Manager</option><option>Vendor</option><option>QC Team</option></select>
+              <input className="admin-input" placeholder={shouldCreateLogin ? 'Login email' : 'Email / ID'} value={form.emailOrId} onChange={(event) => update('emailOrId', event.target.value)} />
+              {shouldCreateLogin && <input className="admin-input" placeholder={editingRecord ? 'New password (optional)' : 'Login password'} type="password" value={form.password} onChange={(event) => update('password', event.target.value)} />}
+              <select className="admin-input" disabled={shouldCreateLogin} value={loginRole} onChange={(event) => update('role', event.target.value)}><option>Admin</option><option>Manager</option><option>Vendor</option><option>QC Team</option></select>
               <select className="admin-input" value={form.status} onChange={(event) => update('status', event.target.value)}><option>Active</option><option>Pending</option><option>Approved</option><option>Rejected</option><option>Inactive</option></select>
               <input className="admin-input" placeholder="Project" value={form.project} onChange={(event) => update('project', event.target.value)} />
               <input className="admin-input" placeholder="Language" value={form.language} onChange={(event) => update('language', event.target.value)} />

@@ -11,6 +11,7 @@ const adminRecordSchema = new mongoose.Schema(
     status: { type: String, enum: ['Active', 'Pending', 'Approved', 'Rejected', 'Inactive'], default: 'Active' },
     score: { type: String, default: '', trim: true },
     notes: { type: String, default: '', trim: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     createdBy: { type: String, default: 'system', trim: true },
     updatedBy: { type: String, default: 'system', trim: true },
   },
