@@ -1,19 +1,15 @@
 import {
   BarChart3,
-  Bell,
   BriefcaseBusiness,
-  CheckCircle2,
   ClipboardCheck,
   CreditCard,
   Database,
   FileBarChart,
   FileText,
   FolderKanban,
-  Globe2,
   Languages,
   LogOut,
   Settings,
-  ShieldCheck,
   UploadCloud,
   Users,
   UserCog,
@@ -40,63 +36,6 @@ export const sidebarItems = [
   { id: 'reports', label: 'Reports', icon: FileBarChart },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'logout', label: 'Logout', icon: LogOut },
-]
-
-export const metrics = [
-  ['Total Users', '12,480', '+18%', Users],
-  ['Active Vendors', '342', '+24%', BriefcaseBusiness],
-  ['DC Team Members', '1,204', '+12%', UserCog],
-  ['Total Projects', '86', '+9%', FolderKanban],
-  ['Active Projects', '29', '+7%', ShieldCheck],
-  ['Total Uploads', '4.8M', '+31%', UploadCloud],
-  ['Approved Data', '3.9M', '+28%', CheckCircle2],
-  ['Rejected Data', '184K', '-4%', ClipboardCheck],
-  ['Pending QC', '64K', '+6%', Bell],
-  ['Total Payments', '$428K', '+19%', CreditCard],
-  ['Monthly Revenue', '$96K', '+22%', BarChart3],
-  ['Completion %', '78%', '+11%', Globe2],
-]
-
-export const monthlyUploads = [
-  { month: 'Jan', uploads: 42000, approved: 36000 },
-  { month: 'Feb', uploads: 52000, approved: 45500 },
-  { month: 'Mar', uploads: 61000, approved: 52000 },
-  { month: 'Apr', uploads: 74000, approved: 65100 },
-  { month: 'May', uploads: 88000, approved: 78600 },
-  { month: 'Jun', uploads: 112000, approved: 98400 },
-]
-
-export const languageData = [
-  { language: 'Hindi', value: 32 },
-  { language: 'English', value: 28 },
-  { language: 'Tamil', value: 14 },
-  { language: 'Telugu', value: 12 },
-  { language: 'Marathi', value: 8 },
-  { language: 'Bengali', value: 6 },
-]
-
-export const approvalData = [
-  { name: 'Approved', value: 72 },
-  { name: 'Pending', value: 18 },
-  { name: 'Rejected', value: 10 },
-]
-
-export const vendorPerformance = [
-  { name: 'Astra Data', score: 94 },
-  { name: 'Nova Voice', score: 88 },
-  { name: 'Pixel Ops', score: 82 },
-  { name: 'ScriptHub', score: 78 },
-  { name: 'CloudServe', score: 73 },
-]
-
-export const productivityData = [
-  { day: 'Mon', tasks: 320 },
-  { day: 'Tue', tasks: 410 },
-  { day: 'Wed', tasks: 365 },
-  { day: 'Thu', tasks: 520 },
-  { day: 'Fri', tasks: 610 },
-  { day: 'Sat', tasks: 450 },
-  { day: 'Sun', tasks: 290 },
 ]
 
 export const pageCopy = {

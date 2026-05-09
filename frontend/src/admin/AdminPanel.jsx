@@ -19,10 +19,16 @@ import {
 import {
   ArrowDownToLine,
   Bell,
+  BriefcaseBusiness,
   ChevronDown,
+  CheckCircle2,
+  ClipboardCheck,
+  CreditCard,
   Edit3,
   Eye,
   Filter,
+  FolderKanban,
+  Globe2,
   LogOut,
   Menu,
   MessageSquare,
@@ -30,19 +36,18 @@ import {
   Plus,
   Search,
   Shield,
+  ShieldCheck,
   Sun,
   Trash2,
+  UploadCloud,
   X,
+  UserCog,
+  UserRoundPlus,
+  Users,
 } from 'lucide-react'
 import {
-  approvalData,
-  languageData,
-  metrics,
-  monthlyUploads,
   pageCopy,
-  productivityData,
   sidebarItems,
-  vendorPerformance,
 } from './adminData.jsx'
 import { usePublicSettings } from '../hooks/usePublicSettings.js'
 import { API_ENDPOINTS } from '../lib/api.js'
@@ -68,6 +73,20 @@ const statusStyles = {
 }
 
 const pieColors = ['#22d3ee', '#a78bfa', '#fb7185']
+const dashboardIcons = {
+  Bell,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ClipboardCheck,
+  CreditCard,
+  FolderKanban,
+  Globe2,
+  ShieldCheck,
+  UploadCloud,
+  UserCog,
+  UserRoundPlus,
+  Users,
+}
 const defaultLegalForm = {
   title: '',
   slug: '',
@@ -1834,25 +1853,63 @@ function IconButton({ icon: Icon }) {
 }
 
 function DashboardPage() {
+  const [dashboard, setDashboard] = useState({
+    metrics: [],
+    monthlyUploads: [],
+    approvalData: [],
+    languageData: [],
+    vendorPerformance: [],
+    productivityData: [],
+    completion: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchDashboard = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await fetch(API_ENDPOINTS.dashboard.summary, { headers: authHeaders() })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Unable to load dashboard')
+      setDashboard((current) => ({ ...current, ...(result.data || {}) }))
+    } catch (dashboardError) {
+      setError(dashboardError.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboard()
+  }, [])
+
+  const completion = Number(dashboard.completion || 0)
+
   return (
     <div className="grid gap-6">
+      {error && <div className="rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 font-bold text-rose-200">{error}</div>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(([label, value, trend, Icon], index) => (
+        {loading ? [1, 2, 3, 4, 5, 6, 7, 8].map((item) => <div key={item} className="h-36 animate-pulse rounded-[1.5rem] bg-white/[0.06]" />) : dashboard.metrics.map(({ icon, label, value }, index) => {
+          const Icon = dashboardIcons[icon] || Globe2
+          return (
           <motion.div key={label} className="admin-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
             <div className="flex items-center justify-between">
               <span className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200"><Icon size={22} /></span>
-              <span className={`text-sm font-black ${trend.startsWith('-') ? 'text-rose-300' : 'text-emerald-300'}`}>{trend}</span>
+              <span className="text-sm font-black text-emerald-300">Live</span>
             </div>
             <p className="mt-5 text-sm font-bold text-slate-400">{label}</p>
             <p className="mt-1 text-3xl font-black text-white">{value}</p>
           </motion.div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <ChartCard title="Monthly Upload Progress">
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={monthlyUploads}>
+          <ChartEmpty show={!loading && !dashboard.monthlyUploads.length}>
+            <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={dashboard.monthlyUploads}>
               <defs>
                 <linearGradient id="uploads" x1="0" x2="0" y1="0" y2="1">
                   <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.45} />
@@ -1867,42 +1924,49 @@ function DashboardPage() {
               <Area type="monotone" dataKey="approved" stroke="#a78bfa" fill="transparent" />
             </AreaChart>
           </ResponsiveContainer>
+          </ChartEmpty>
         </ChartCard>
         <ChartCard title="Approved vs Rejected">
-          <ResponsiveContainer width="100%" height={300}>
+          <ChartEmpty show={!loading && !dashboard.approvalData.length}>
+            <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={approvalData} dataKey="value" innerRadius={70} outerRadius={110} paddingAngle={4}>
-                {approvalData.map((entry, index) => <Cell key={entry.name} fill={pieColors[index]} />)}
+              <Pie data={dashboard.approvalData} dataKey="value" innerRadius={70} outerRadius={110} paddingAngle={4}>
+                {dashboard.approvalData.map((entry, index) => <Cell key={entry.name} fill={pieColors[index]} />)}
               </Pie>
               <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
             </PieChart>
           </ResponsiveContainer>
+          </ChartEmpty>
         </ChartCard>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <ChartCard title="Language-wise Collection">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={languageData}>
+          <ChartEmpty show={!loading && !dashboard.languageData.length}>
+            <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={dashboard.languageData}>
               <XAxis dataKey="language" stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
               <Bar dataKey="value" fill="#22d3ee" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </ChartEmpty>
         </ChartCard>
         <ChartCard title="Vendor Performance">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={vendorPerformance} layout="vertical">
+          <ChartEmpty show={!loading && !dashboard.vendorPerformance.length}>
+            <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={dashboard.vendorPerformance} layout="vertical">
               <XAxis type="number" hide />
               <YAxis dataKey="name" type="category" stroke="#94a3b8" width={92} />
               <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
               <Bar dataKey="score" fill="#a78bfa" radius={[0, 8, 8, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </ChartEmpty>
         </ChartCard>
         <ChartCard title="Daily Productivity">
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={productivityData}>
+            <LineChart data={dashboard.productivityData}>
               <XAxis dataKey="day" stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
               <Line type="monotone" dataKey="tasks" stroke="#22d3ee" strokeWidth={3} dot={false} />
@@ -1917,14 +1981,22 @@ function DashboardPage() {
             <h2 className="text-xl font-black text-white">Project Completion</h2>
             <p className="mt-1 text-sm font-semibold text-slate-400">Overall delivery progress across active projects.</p>
           </div>
-          <span className="text-3xl font-black text-cyan-200">78%</span>
+          <span className="text-3xl font-black text-cyan-200">{completion}%</span>
         </div>
         <div className="mt-5 h-4 overflow-hidden rounded-full bg-white/10">
-          <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-purple-400" initial={{ width: 0 }} animate={{ width: '78%' }} transition={{ duration: 0.9 }} />
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-purple-400" initial={{ width: 0 }} animate={{ width: `${completion}%` }} transition={{ duration: 0.9 }} />
         </div>
       </div>
     </div>
   )
+}
+
+function ChartEmpty({ children, show }) {
+  if (show) {
+    return <div className="grid h-[260px] place-items-center rounded-2xl border border-dashed border-white/15 text-center font-bold text-slate-400">No MongoDB records yet.</div>
+  }
+
+  return children
 }
 
 function ChartCard({ children, title }) {

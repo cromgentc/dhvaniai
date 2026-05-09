@@ -20,6 +20,9 @@ export const API_ENDPOINTS = {
   auth: {
     login: apiPath('/api/auth/login'),
   },
+  dashboard: {
+    summary: apiPath('/api/dashboard/summary'),
+  },
   leads: {
     create: apiPath('/api/leads/create'),
     all: apiPath('/api/leads/all'),

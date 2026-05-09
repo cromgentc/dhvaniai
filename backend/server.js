@@ -7,6 +7,7 @@ import adminRecordRoutes from './routes/adminRecordRoutes.js'
 import adminSettingsRoutes from './routes/adminSettingsRoutes.js'
 import applicationRoutes from './routes/applicationRoutes.js'
 import authRoutes from './routes/authRoutes.js'
+import dashboardRoutes from './routes/dashboardRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
 import legalRoutes from './routes/legalRoutes.js'
 import leadRoutes from './routes/leadRoutes.js'
@@ -51,6 +52,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/leads', leadRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/legal', legalRoutes)
 app.use('/api/jobs', jobRoutes)
 app.use('/api/applications', applicationRoutes)
