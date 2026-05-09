@@ -1,5 +1,5 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL || ''
-const fallbackApiUrl = import.meta.env.DEV ? 'https://dhvaniai.vercel.app/' : ''
+const fallbackApiUrl = 'https://dhvaniai-3w7k.onrender.com'
 
 function normalizeApiBaseUrl(value) {
   return value.trim().replace(/\/+$/, '').replace(/\/api$/, '')
