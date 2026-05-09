@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#050816] text-white antialiased;
+  }
+
+  ::selection {
+    @apply bg-cyan-300 text-slate-950;
+  }
+}
+
+@layer components {
+  .section-kicker {
+    @apply mb-4 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-cyan-200;
+  }
+
+  .nav-button {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-glass backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-cyan-300 hover:text-slate-950;
+  }
+
+  .nav-link {
+    @apply relative inline-flex items-center gap-1.5 overflow-hidden rounded-full px-3 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-cyan-200;
+  }
+
+  .nav-underline {
+    @apply absolute bottom-1.5 left-4 h-px w-0 rounded-full bg-cyan-300 opacity-0 transition-all duration-300 group-hover:w-[calc(100%-2rem)] group-hover:opacity-100;
+  }
+
+  .admin-card {
+    @apply rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-5 shadow-glass backdrop-blur-xl;
+  }
+
+  .admin-input {
+    @apply w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10;
+  }
+
+  .admin-icon-btn {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-slate-300 transition hover:bg-cyan-300 hover:text-slate-950 hover:shadow-cyan;
+  }
+
+  .admin-primary-btn {
+    @apply inline-flex items-center gap-2 rounded-full bg-cyan-300 px-5 py-3 font-black text-slate-950 shadow-cyan transition hover:bg-white;
+  }
+
+  .admin-secondary-btn {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 font-black text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/10;
+  }
+
+  .table-icon {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-slate-300 transition hover:bg-cyan-300 hover:text-slate-950;
+  }
+}
