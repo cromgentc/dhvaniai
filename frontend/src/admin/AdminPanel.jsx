@@ -1873,10 +1873,15 @@ function DashboardPage() {
     try {
       const response = await fetch(API_ENDPOINTS.dashboard.summary, { headers: authHeaders() })
       const result = await response.json()
+      if (response.status === 404) {
+        setDashboard((current) => ({ ...current, metrics: [] }))
+        setError('Dashboard API is not live on the backend yet. Redeploy the backend latest commit.')
+        return
+      }
       if (!response.ok) throw new Error(result.message || 'Unable to load dashboard')
       setDashboard((current) => ({ ...current, ...(result.data || {}) }))
     } catch (dashboardError) {
-      setError(dashboardError.message)
+      setError(dashboardError.message || 'Unable to load dashboard')
     } finally {
       setLoading(false)
     }
