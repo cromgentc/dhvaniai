@@ -22,6 +22,8 @@ export async function seedSettings() {
       googleMapUrl: 'https://www.google.com/maps/search/?api=1&query=Noida%2C%20Uttar%20Pradesh%2C%20India',
       supportEmail: 'hello@dhvani.ai',
       salesEmail: 'hello@dhvani.ai',
+      logoUrl: '/dhvani-logo.png',
+      faviconUrl: '/dhvani-logo.png',
       updatedBy: 'system',
     })
   }

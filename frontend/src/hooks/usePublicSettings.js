@@ -30,4 +30,28 @@ export function usePublicSettings() {
           setContact(nextContact)
           updateFavicon(nextContact.faviconUrl)
         }
-        if (socialResponse.ok && socialResult.data) setSocialLinks(s
+        if (socialResponse.ok && socialResult.data) setSocialLinks(socialResult.data)
+      } catch {
+        setContact(defaultContactSettings)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSettings()
+  }, [])
+
+  return { contact, loading, socialLinks }
+}
+
+function updateFavicon(faviconUrl) {
+  if (!faviconUrl || typeof document === 'undefined') return
+
+  let link = document.querySelector("link[rel='icon']")
+  if (!link) {
+    link = document.createElement('link')
+    link.rel = 'icon'
+    document.head.appendChild(link)
+  }
+  link.href = faviconUrl
+}

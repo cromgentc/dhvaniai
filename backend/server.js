@@ -9,9 +9,11 @@ import jobRoutes from './routes/jobRoutes.js'
 import legalRoutes from './routes/legalRoutes.js'
 import leadRoutes from './routes/leadRoutes.js'
 import settingsRoutes from './routes/settingsRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 import { seedJobs } from './utils/seedJobs.js'
 import { seedLegalPages } from './utils/seedLegalPages.js'
 import { seedSettings } from './utils/seedSettings.js'
+import { seedUsers } from './utils/seedUsers.js'
 
 dotenv.config()
 
@@ -37,6 +39,7 @@ app.use('/api/jobs', jobRoutes)
 app.use('/api/applications', applicationRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/admin/settings', adminSettingsRoutes)
+app.use('/api/users', userRoutes)
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'API route not found' })
@@ -52,6 +55,7 @@ connectDB()
     await seedLegalPages()
     await seedJobs()
     await seedSettings()
+    await seedUsers()
     app.listen(port, () => {
       console.log(`Dhvani backend running at http://localhost:${port}`)
     })

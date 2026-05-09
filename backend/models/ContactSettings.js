@@ -8,6 +8,8 @@ const contactSettingsSchema = new mongoose.Schema(
     googleMapUrl: { type: String, trim: true },
     supportEmail: { type: String, trim: true, lowercase: true, match: [/^\S+@\S+\.\S+$|^$/, 'Valid support email is required'] },
     salesEmail: { type: String, trim: true, lowercase: true, match: [/^\S+@\S+\.\S+$|^$/, 'Valid sales email is required'] },
+    logoUrl: { type: String, trim: true },
+    faviconUrl: { type: String, trim: true },
     updatedBy: { type: String, default: 'admin', trim: true },
   },
   { timestamps: true },

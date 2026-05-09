@@ -1671,4 +1671,344 @@ function SidebarContent({ activePage, onLogout, setActivePage, setSidebarOpen })
 
   return (
     <div className="flex h-full flex-col">
-      <img src={contact.logoUrl || '/dhvani-logo.png'} alt="Dhvani.AI" className="h-12 w-28 rounded-xl bg-
+      <img src={contact.logoUrl || '/dhvani-logo.png'} alt="Dhvani.AI" className="h-12 w-28 rounded-xl bg-white object-contain px-3 py-2" />
+      <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Role Access</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {roles.map((role) => (
+            <span key={role} className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-slate-300">{role}</span>
+          ))}
+        </div>
+      </div>
+      <nav className="mt-5 grid gap-1 overflow-y-auto pr-1">
+        {sidebarItems.map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => {
+              if (id === 'logout') {
+                onLogout()
+              } else {
+                setActivePage(id)
+              }
+              setSidebarOpen?.(false)
+            }}
+            className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition ${
+              activePage === id ? 'bg-cyan-300 text-slate-950 shadow-cyan' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <Icon size={18} />
+            {label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
+function TopHeader({ activeItem, darkMode, onCreate, onLogout, query, setDarkMode, setQuery, setSidebarOpen }) {
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false)
+
+  return (
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-[#050816]/80 shadow-glass backdrop-blur-2xl lg:left-72">
+      <div className="flex h-20 items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <button className="text-white lg:hidden" onClick={() => setSidebarOpen(true)}>
+          <Menu />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Admin / {activeItem.label}</p>
+          <h1 className="truncate text-2xl font-black text-white">{activeItem.label}</h1>
+        </div>
+        <div className="hidden max-w-md flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-4 py-3 xl:flex">
+          <Search size={18} className="text-slate-500" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" placeholder="Search users, vendors, projects..." />
+        </div>
+        <button onClick={onCreate} className="hidden rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 shadow-cyan sm:inline-flex">
+          Create Project
+        </button>
+        <IconButton icon={Bell} />
+        <IconButton icon={MessageSquare} />
+        <button className="admin-icon-btn" onClick={() => setDarkMode((value) => !value)}>
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+        <div className="relative hidden md:block">
+          <button onClick={() => setAdminMenuOpen((value) => !value)} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-black text-white">
+            Admin
+            <ChevronDown size={15} className={`transition ${adminMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <AnimatePresence>
+            {adminMenuOpen && (
+              <motion.div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-white/10 bg-[#071024] p-2 shadow-glass" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+                <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black text-rose-200 transition hover:bg-rose-400/10">
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function IconButton({ icon: Icon }) {
+  return (
+    <button className="admin-icon-btn">
+      <Icon size={18} />
+    </button>
+  )
+}
+
+function DashboardPage() {
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(([label, value, trend, Icon], index) => (
+          <motion.div key={label} className="admin-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
+            <div className="flex items-center justify-between">
+              <span className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200"><Icon size={22} /></span>
+              <span className={`text-sm font-black ${trend.startsWith('-') ? 'text-rose-300' : 'text-emerald-300'}`}>{trend}</span>
+            </div>
+            <p className="mt-5 text-sm font-bold text-slate-400">{label}</p>
+            <p className="mt-1 text-3xl font-black text-white">{value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <ChartCard title="Monthly Upload Progress">
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={monthlyUploads}>
+              <defs>
+                <linearGradient id="uploads" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.45} />
+                  <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.08)" />
+              <XAxis dataKey="month" stroke="#94a3b8" />
+              <YAxis stroke="#94a3b8" />
+              <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
+              <Area type="monotone" dataKey="uploads" stroke="#22d3ee" fill="url(#uploads)" />
+              <Area type="monotone" dataKey="approved" stroke="#a78bfa" fill="transparent" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Approved vs Rejected">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie data={approvalData} dataKey="value" innerRadius={70} outerRadius={110} paddingAngle={4}>
+                {approvalData.map((entry, index) => <Cell key={entry.name} fill={pieColors[index]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <ChartCard title="Language-wise Collection">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={languageData}>
+              <XAxis dataKey="language" stroke="#94a3b8" />
+              <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
+              <Bar dataKey="value" fill="#22d3ee" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Vendor Performance">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={vendorPerformance} layout="vertical">
+              <XAxis type="number" hide />
+              <YAxis dataKey="name" type="category" stroke="#94a3b8" width={92} />
+              <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
+              <Bar dataKey="score" fill="#a78bfa" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard title="Daily Productivity">
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={productivityData}>
+              <XAxis dataKey="day" stroke="#94a3b8" />
+              <Tooltip contentStyle={{ background: '#071024', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }} />
+              <Line type="monotone" dataKey="tasks" stroke="#22d3ee" strokeWidth={3} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="admin-card">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-white">Project Completion</h2>
+            <p className="mt-1 text-sm font-semibold text-slate-400">Overall delivery progress across active projects.</p>
+          </div>
+          <span className="text-3xl font-black text-cyan-200">78%</span>
+        </div>
+        <div className="mt-5 h-4 overflow-hidden rounded-full bg-white/10">
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-purple-400" initial={{ width: 0 }} animate={{ width: '78%' }} transition={{ duration: 0.9 }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ChartCard({ children, title }) {
+  return (
+    <div className="admin-card">
+      <h2 className="mb-5 text-xl font-black text-white">{title}</h2>
+      {children}
+    </div>
+  )
+}
+
+function ManagementPage({ activeItem, filteredRows, notify, query, setDeleteOpen, setModalOpen, setQuery }) {
+  const features = pageCopy[activeItem.id] || ['Search', 'Filter', 'Manage records', 'Export data']
+
+  return (
+    <div className="grid gap-6">
+      <div className="admin-card">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Operations</p>
+            <h2 className="mt-2 text-3xl font-black text-white">{activeItem.label}</h2>
+            <p className="mt-2 max-w-2xl text-slate-400">Search, filter, create, edit, delete, export, and manage enterprise records from a reusable admin workflow.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button className="admin-secondary-btn"><Filter size={16} /> Filter</button>
+            <button onClick={() => notify('Export started')} className="admin-secondary-btn"><ArrowDownToLine size={16} /> Export CSV</button>
+            <button onClick={() => setModalOpen(true)} className="admin-primary-btn"><Plus size={16} /> Add New</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {features.map((feature) => (
+          <div key={feature} className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-glass">
+            <p className="font-black text-white">{feature}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Production-ready UI placeholder for {activeItem.label.toLowerCase()}.</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="admin-card">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.05] px-4 py-3 md:w-96">
+            <Search size={17} className="text-slate-500" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" placeholder="Search table..." />
+          </div>
+          <div className="flex gap-2">
+            {['All', 'Active', 'Pending', 'Approved'].map((item) => (
+              <button key={item} className="rounded-full bg-white/[0.06] px-4 py-2 text-sm font-bold text-slate-300 hover:bg-cyan-300 hover:text-slate-950">{item}</button>
+            ))}
+          </div>
+        </div>
+        <DataTable rows={filteredRows} setDeleteOpen={setDeleteOpen} setModalOpen={setModalOpen} />
+      </div>
+    </div>
+  )
+}
+
+function DataTable({ rows, setDeleteOpen, setModalOpen }) {
+  if (!rows.length) {
+    return <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-10 text-center font-bold text-slate-400">No records found.</div>
+  }
+
+  return (
+    <div className="mt-6 overflow-x-auto">
+      <table className="w-full min-w-[760px] text-left">
+        <thead>
+          <tr className="border-b border-white/10 text-xs uppercase tracking-[0.18em] text-slate-500">
+            {['Name', 'Role', 'Project', 'Language', 'Status', 'Score', 'Actions'].map((head) => <th key={head} className="px-4 py-4">{head}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.name}-${row.project}`} className="border-b border-white/5 text-sm font-semibold text-slate-300 hover:bg-white/[0.035]">
+              <td className="px-4 py-4 font-black text-white">{row.name}</td>
+              <td className="px-4 py-4">{row.role}</td>
+              <td className="px-4 py-4">{row.project}</td>
+              <td className="px-4 py-4">{row.language}</td>
+              <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${statusStyles[row.status]}`}>{row.status}</span></td>
+              <td className="px-4 py-4">{row.score}</td>
+              <td className="px-4 py-4">
+                <div className="flex gap-2">
+                  <button className="table-icon"><Eye size={15} /></button>
+                  <button className="table-icon" onClick={() => setModalOpen(true)}><Edit3 size={15} /></button>
+                  <button className="table-icon text-rose-300" onClick={() => setDeleteOpen(true)}><Trash2 size={15} /></button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="mt-5 flex items-center justify-between text-sm font-semibold text-slate-500">
+        <p>Showing 1-6 of 48 records</p>
+        <div className="flex gap-2">
+          <button className="rounded-full bg-white/[0.06] px-4 py-2">Prev</button>
+          <button className="rounded-full bg-cyan-300 px-4 py-2 text-slate-950">1</button>
+          <button className="rounded-full bg-white/[0.06] px-4 py-2">Next</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ModalForm({ activeItem, isOpen, notify, onClose }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 px-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[#071024] p-6 shadow-glass" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-black text-white">Add / Edit {activeItem.label}</h2>
+              <button onClick={onClose} className="text-slate-400"><X /></button>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <input className="admin-input" placeholder="Name" />
+              <input className="admin-input" placeholder="Email / ID" />
+              <select className="admin-input"><option>Admin</option><option>Manager</option><option>Vendor</option><option>QC Team</option></select>
+              <select className="admin-input"><option>Active</option><option>Pending</option><option>Inactive</option></select>
+              <textarea className="admin-input min-h-28 sm:col-span-2" placeholder="Notes / Remarks" />
+            </div>
+            <button onClick={() => { notify('Record saved successfully'); onClose() }} className="admin-primary-btn mt-6 w-full justify-center">Save Record</button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function ConfirmDialog({ isOpen, notify, onClose }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div className="fixed inset-0 z-[80] grid place-items-center bg-black/60 px-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="max-w-md rounded-[2rem] border border-white/10 bg-[#071024] p-6 text-center shadow-glass" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
+            <Shield className="mx-auto text-rose-300" size={44} />
+            <h2 className="mt-4 text-2xl font-black text-white">Delete this record?</h2>
+            <p className="mt-2 text-slate-400">This confirmation protects admin records before deletion.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button onClick={onClose} className="admin-secondary-btn justify-center">Cancel</button>
+              <button onClick={() => { notify('Record deleted'); onClose() }} className="rounded-full bg-rose-400 px-5 py-3 font-black text-white">Delete</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function Toast({ message }) {
+  return (
+    <AnimatePresence>
+      {message && (
+        <motion.div className="fixed bottom-5 right-5 z-[90] rounded-2xl bg-cyan-300 px-5 py-4 font-black text-slate-950 shadow-cyan" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 18 }}>
+          {message}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export default AdminPanel

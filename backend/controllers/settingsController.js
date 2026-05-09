@@ -8,6 +8,8 @@ const defaultContact = {
   googleMapUrl: 'https://www.google.com/maps/search/?api=1&query=Noida%2C%20Uttar%20Pradesh%2C%20India',
   supportEmail: 'hello@dhvani.ai',
   salesEmail: 'hello@dhvani.ai',
+  logoUrl: '/dhvani-logo.png',
+  faviconUrl: '/dhvani-logo.png',
 }
 
 function handleError(res, error) {
@@ -38,6 +40,8 @@ export async function updateContact(req, res) {
       googleMapUrl: String(req.body.googleMapUrl || '').trim(),
       supportEmail: String(req.body.supportEmail || '').trim(),
       salesEmail: String(req.body.salesEmail || '').trim(),
+      logoUrl: String(req.body.logoUrl || '').trim(),
+      faviconUrl: String(req.body.faviconUrl || '').trim(),
       updatedBy: req.user?.email || 'admin',
     }
 
@@ -47,6 +51,12 @@ export async function updateContact(req, res) {
     if (payload.googleMapUrl && !/^https?:\/\/.+/i.test(payload.googleMapUrl)) {
       return res.status(400).json({ success: false, message: 'Valid Google Maps URL is required.' })
     }
+    if (payload.logoUrl && !isAssetUrl(payload.logoUrl)) {
+      return res.status(400).json({ success: false, message: 'Valid logo URL or image upload is required.' })
+    }
+    if (payload.faviconUrl && !isAssetUrl(payload.faviconUrl)) {
+      return res.status(400).json({ success: false, message: 'Valid favicon URL or image upload is required.' })
+    }
 
     const existing = await getContactDocument()
     const contact = await ContactSettings.findByIdAndUpdate(existing._id, payload, { new: true, runValidators: true })
@@ -54,6 +64,10 @@ export async function updateContact(req, res) {
   } catch (error) {
     return handleError(res, error)
   }
+}
+
+function isAssetUrl(value) {
+  return /^https?:\/\/.+/i.test(value) || value.startsWith('/') || value.startsWith('data:image/')
 }
 
 export async function getPublicSocialLinks(req, res) {

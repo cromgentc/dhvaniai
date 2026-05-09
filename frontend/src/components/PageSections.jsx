@@ -275,4 +275,7 @@ function ContactLine({ href, icon: Icon, text }) {
 
   return (
     <div className="flex items-start gap-3">
-      {conte
+      {content}
+    </div>
+  )
+}

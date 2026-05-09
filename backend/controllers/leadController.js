@@ -45,11 +45,15 @@ export async function createLead(req, res) {
 }
 
 export async function getAllLeads(req, res) {
-  const { q = '', status = '' } = req.query
+  const { q = '', status = '', type = '' } = req.query
   const filter = {}
 
   if (status) {
     filter.status = status
+  }
+
+  if (['enterprise', 'vendor', 'freelancer'].includes(type)) {
+    filter.registrationType = type
   }
 
   if (q) {

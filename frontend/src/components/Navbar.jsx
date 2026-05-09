@@ -284,4 +284,4 @@ function MobileAccordion({ item, openItem, setMenuOpen, setOpenItem }) {
   )
 }
 
-e
+export default Navbar
