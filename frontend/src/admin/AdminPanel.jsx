@@ -41,7 +41,6 @@ import {
   monthlyUploads,
   pageCopy,
   productivityData,
-  roles,
   sidebarItems,
   tableRows,
   vendorPerformance,
@@ -133,6 +132,40 @@ function getAdminToken() {
   return window.localStorage.getItem('dhvaniAdminToken') || ''
 }
 
+function decodeTokenPayload(token) {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(window.atob(normalizedPayload))
+  } catch {
+    return null
+  }
+}
+
+function getAdminUser() {
+  try {
+    const storedUser = JSON.parse(window.localStorage.getItem('dhvaniAdminUser') || 'null')
+    if (storedUser?.role) return storedUser
+  } catch {
+    // Fall through to token payload for older sessions.
+  }
+
+  const payload = decodeTokenPayload(getAdminToken())
+  return payload?.appRole ? { name: payload.name, email: payload.email, role: payload.appRole } : null
+}
+
+function canAccessPage(role, pageId) {
+  if (pageId === 'logout') return true
+  if (pageId === 'settings') return role === 'Admin'
+  if (pageId === 'payments') return role === 'Admin' || role === 'Manager'
+  return true
+}
+
+function getAllowedSidebarItems(role) {
+  return sidebarItems.filter((item) => canAccessPage(role, item.id))
+}
+
 function authHeaders() {
   return {
     'Content-Type': 'application/json',
@@ -142,6 +175,7 @@ function authHeaders() {
 
 function AdminPanel() {
   const [loggedIn, setLoggedIn] = useState(() => Boolean(getAdminToken()))
+  const [adminUser, setAdminUser] = useState(() => getAdminUser())
   const [activePage, setActivePage] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
@@ -150,11 +184,28 @@ function AdminPanel() {
   const [toast, setToast] = useState('')
   const [query, setQuery] = useState('')
 
-  const activeItem = sidebarItems.find((item) => item.id === activePage) || sidebarItems[0]
+  const userRole = adminUser?.role || 'Admin'
+  const allowedSidebarItems = useMemo(() => getAllowedSidebarItems(userRole), [userRole])
+  const activeItem = allowedSidebarItems.find((item) => item.id === activePage) || allowedSidebarItems[0] || sidebarItems[0]
   const filteredRows = useMemo(
     () => tableRows.filter((row) => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())),
     [query],
   )
+
+  const changePage = (pageId) => {
+    if (!canAccessPage(userRole, pageId)) {
+      notify('You do not have access to this section')
+      setActivePage('dashboard')
+      return
+    }
+    setActivePage(pageId)
+  }
+
+  useEffect(() => {
+    if (loggedIn && !canAccessPage(userRole, activePage)) {
+      setActivePage('dashboard')
+    }
+  }, [activePage, loggedIn, userRole])
 
   const notify = (message) => {
     setToast(message)
@@ -163,19 +214,24 @@ function AdminPanel() {
 
   const logout = () => {
     window.localStorage.removeItem('dhvaniAdminToken')
+    window.localStorage.removeItem('dhvaniAdminUser')
+    setAdminUser(null)
     setLoggedIn(false)
     setActivePage('dashboard')
     setQuery('')
   }
 
   if (!loggedIn) {
-    return <LoginPage onLogin={() => setLoggedIn(true)} />
+    return <LoginPage onLogin={(user) => {
+      setAdminUser(user)
+      setLoggedIn(true)
+    }} />
   }
 
   return (
     <div className={`${darkMode ? 'dark bg-[#050816] text-white' : 'bg-slate-100 text-slate-950'} min-h-screen`}>
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(168,85,247,0.18),transparent_30%),linear-gradient(135deg,#050816,#071024_48%,#030610)] dark:block hidden" />
-      <Sidebar activePage={activePage} onLogout={logout} setActivePage={setActivePage} setSidebarOpen={setSidebarOpen} sidebarOpen={sidebarOpen} />
+      <Sidebar activePage={activePage} adminUser={adminUser} onLogout={logout} setActivePage={changePage} setSidebarOpen={setSidebarOpen} sidebarItems={allowedSidebarItems} sidebarOpen={sidebarOpen} />
       <div className="lg:pl-72">
         <TopHeader
           activeItem={activeItem}
@@ -1585,7 +1641,8 @@ function LoginPage({ onLogin }) {
       if (!response.ok) throw new Error(result.message || 'Login failed')
 
       window.localStorage.setItem('dhvaniAdminToken', result.data.token)
-      onLogin()
+      window.localStorage.setItem('dhvaniAdminUser', JSON.stringify(result.data.user))
+      onLogin(result.data.user)
     } catch (loginError) {
       setError(loginError.message)
     } finally {
@@ -1620,11 +1677,11 @@ function LoginPage({ onLogin }) {
   )
 }
 
-function Sidebar({ activePage, onLogout, setActivePage, setSidebarOpen, sidebarOpen }) {
+function Sidebar({ activePage, adminUser, onLogout, setActivePage, setSidebarOpen, sidebarItems, sidebarOpen }) {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-white/10 bg-[#071024]/90 p-4 shadow-glass backdrop-blur-2xl lg:block">
-        <SidebarContent activePage={activePage} onLogout={onLogout} setActivePage={setActivePage} />
+        <SidebarContent activePage={activePage} adminUser={adminUser} onLogout={onLogout} setActivePage={setActivePage} sidebarItems={sidebarItems} />
       </aside>
       <AnimatePresence>
         {sidebarOpen && (
@@ -1632,7 +1689,7 @@ function Sidebar({ activePage, onLogout, setActivePage, setSidebarOpen, sidebarO
             <button className="absolute right-4 top-4 text-white" onClick={() => setSidebarOpen(false)}>
               <X />
             </button>
-            <SidebarContent activePage={activePage} onLogout={onLogout} setActivePage={setActivePage} setSidebarOpen={setSidebarOpen} />
+            <SidebarContent activePage={activePage} adminUser={adminUser} onLogout={onLogout} setActivePage={setActivePage} setSidebarOpen={setSidebarOpen} sidebarItems={sidebarItems} />
           </motion.aside>
         )}
       </AnimatePresence>
@@ -1640,8 +1697,9 @@ function Sidebar({ activePage, onLogout, setActivePage, setSidebarOpen, sidebarO
   )
 }
 
-function SidebarContent({ activePage, onLogout, setActivePage, setSidebarOpen }) {
+function SidebarContent({ activePage, adminUser, onLogout, setActivePage, setSidebarOpen, sidebarItems }) {
   const { contact } = usePublicSettings()
+  const activeRole = adminUser?.role || 'Admin'
 
   return (
     <div className="flex h-full flex-col">
@@ -1649,9 +1707,7 @@ function SidebarContent({ activePage, onLogout, setActivePage, setSidebarOpen })
       <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Role Access</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {roles.map((role) => (
-            <span key={role} className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-slate-300">{role}</span>
-          ))}
+          <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-slate-300">{activeRole}</span>
         </div>
       </div>
       <nav className="mt-5 grid gap-1 overflow-y-auto pr-1">
