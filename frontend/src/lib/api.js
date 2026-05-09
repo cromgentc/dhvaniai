@@ -68,4 +68,10 @@ export const API_ENDPOINTS = {
     status: (id) => apiPath(`/api/users/status/${id}`),
     delete: (id) => apiPath(`/api/users/delete/${id}`),
   },
+  adminRecords: {
+    all: (module) => apiPath(`/api/admin-records/${module}`),
+    create: (module) => apiPath(`/api/admin-records/${module}`),
+    update: (module, id) => apiPath(`/api/admin-records/${module}/${id}`),
+    delete: (module, id) => apiPath(`/api/admin-records/${module}/${id}`),
+  },
 }

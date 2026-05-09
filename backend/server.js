@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 import express from 'express'
 import { fileURLToPath, pathToFileURL } from 'url'
 import connectDB from './config/db.js'
+import adminRecordRoutes from './routes/adminRecordRoutes.js'
 import adminSettingsRoutes from './routes/adminSettingsRoutes.js'
 import applicationRoutes from './routes/applicationRoutes.js'
 import authRoutes from './routes/authRoutes.js'
@@ -56,6 +57,7 @@ app.use('/api/applications', applicationRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/admin/settings', adminSettingsRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/admin-records', adminRecordRoutes)
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'API route not found' })

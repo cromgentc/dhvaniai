@@ -42,7 +42,6 @@ import {
   pageCopy,
   productivityData,
   sidebarItems,
-  tableRows,
   vendorPerformance,
 } from './adminData.jsx'
 import { usePublicSettings } from '../hooks/usePublicSettings.js'
@@ -183,17 +182,15 @@ function AdminPanel() {
   const [darkMode, setDarkMode] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [deleteRecord, setDeleteRecord] = useState(null)
+  const [recordRefreshKey, setRecordRefreshKey] = useState(0)
   const [toast, setToast] = useState('')
   const [query, setQuery] = useState('')
 
   const userRole = adminUser?.role || 'Admin'
   const allowedSidebarItems = useMemo(() => getAllowedSidebarItems(userRole), [userRole])
   const activeItem = allowedSidebarItems.find((item) => item.id === activePage) || allowedSidebarItems[0] || sidebarItems[0]
-  const filteredRows = useMemo(
-    () => tableRows.filter((row) => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())),
-    [query],
-  )
-
   const changePage = (pageId) => {
     if (!canAccessPage(userRole, pageId)) {
       notify('You do not have access to this section')
@@ -239,7 +236,10 @@ function AdminPanel() {
           activeItem={activeItem}
           adminUser={adminUser}
           darkMode={darkMode}
-          onCreate={() => setModalOpen(true)}
+          onCreate={() => {
+            setEditingRecord(null)
+            setModalOpen(true)
+          }}
           onLogout={logout}
           query={query}
           setDarkMode={setDarkMode}
@@ -264,14 +264,14 @@ function AdminPanel() {
               ) : activePage === 'settings' ? (
                 <SettingsPage notify={notify} />
               ) : (
-                <ManagementPage activeItem={activeItem} filteredRows={filteredRows} notify={notify} query={query} setDeleteOpen={setDeleteOpen} setModalOpen={setModalOpen} setQuery={setQuery} />
+                <ManagementPage activeItem={activeItem} notify={notify} query={query} recordRefreshKey={recordRefreshKey} setDeleteOpen={setDeleteOpen} setDeleteRecord={setDeleteRecord} setEditingRecord={setEditingRecord} setModalOpen={setModalOpen} setQuery={setQuery} />
               )}
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
-      <ModalForm activeItem={activeItem} isOpen={modalOpen} notify={notify} onClose={() => setModalOpen(false)} />
-      <ConfirmDialog isOpen={deleteOpen} notify={notify} onClose={() => setDeleteOpen(false)} />
+      <ModalForm activeItem={activeItem} editingRecord={editingRecord} isOpen={modalOpen} notify={notify} onClose={() => setModalOpen(false)} onSaved={() => setRecordRefreshKey((value) => value + 1)} />
+      <ConfirmDialog activeItem={activeItem} deleteRecord={deleteRecord} isOpen={deleteOpen} notify={notify} onClose={() => setDeleteOpen(false)} onDeleted={() => setRecordRefreshKey((value) => value + 1)} />
       <Toast message={toast} />
     </div>
   )
@@ -1936,8 +1936,47 @@ function ChartCard({ children, title }) {
   )
 }
 
-function ManagementPage({ activeItem, filteredRows, notify, query, setDeleteOpen, setModalOpen, setQuery }) {
+function ManagementPage({ activeItem, notify, query, recordRefreshKey, setDeleteOpen, setDeleteRecord, setEditingRecord, setModalOpen, setQuery }) {
   const features = pageCopy[activeItem.id] || ['Search', 'Filter', 'Manage records', 'Export data']
+  const [records, setRecords] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('')
+
+  const fetchRecords = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (query) params.set('q', query)
+      if (statusFilter) params.set('status', statusFilter)
+      const response = await fetch(`${API_ENDPOINTS.adminRecords.all(activeItem.id)}?${params.toString()}`, { headers: authHeaders() })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Unable to fetch records')
+      setRecords(result.data || [])
+    } catch (error) {
+      notify(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRecords()
+  }, [activeItem.id, recordRefreshKey, statusFilter])
+
+  const openCreate = () => {
+    setEditingRecord(null)
+    setModalOpen(true)
+  }
+
+  const openEdit = (record) => {
+    setEditingRecord(record)
+    setModalOpen(true)
+  }
+
+  const openDelete = (record) => {
+    setDeleteRecord(record)
+    setDeleteOpen(true)
+  }
 
   return (
     <div className="grid gap-6">
@@ -1951,7 +1990,7 @@ function ManagementPage({ activeItem, filteredRows, notify, query, setDeleteOpen
           <div className="flex flex-wrap gap-3">
             <button className="admin-secondary-btn"><Filter size={16} /> Filter</button>
             <button onClick={() => notify('Export started')} className="admin-secondary-btn"><ArrowDownToLine size={16} /> Export CSV</button>
-            <button onClick={() => setModalOpen(true)} className="admin-primary-btn"><Plus size={16} /> Add New</button>
+            <button onClick={openCreate} className="admin-primary-btn"><Plus size={16} /> Add New</button>
           </div>
         </div>
       </div>
@@ -1960,7 +1999,7 @@ function ManagementPage({ activeItem, filteredRows, notify, query, setDeleteOpen
         {features.map((feature) => (
           <div key={feature} className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-glass">
             <p className="font-black text-white">{feature}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Production-ready UI placeholder for {activeItem.label.toLowerCase()}.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">MongoDB connected workflow for {activeItem.label.toLowerCase()}.</p>
           </div>
         ))}
       </div>
@@ -1969,21 +2008,24 @@ function ManagementPage({ activeItem, filteredRows, notify, query, setDeleteOpen
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.05] px-4 py-3 md:w-96">
             <Search size={17} className="text-slate-500" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" placeholder="Search table..." />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && fetchRecords()} className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" placeholder="Search table..." />
           </div>
           <div className="flex gap-2">
             {['All', 'Active', 'Pending', 'Approved'].map((item) => (
-              <button key={item} className="rounded-full bg-white/[0.06] px-4 py-2 text-sm font-bold text-slate-300 hover:bg-cyan-300 hover:text-slate-950">{item}</button>
+              <button key={item} onClick={() => setStatusFilter(item === 'All' ? '' : item)} className={`rounded-full px-4 py-2 text-sm font-bold ${statusFilter === (item === 'All' ? '' : item) ? 'bg-cyan-300 text-slate-950' : 'bg-white/[0.06] text-slate-300 hover:bg-cyan-300 hover:text-slate-950'}`}>{item}</button>
             ))}
+            <button onClick={fetchRecords} className="admin-primary-btn justify-center">Search</button>
           </div>
         </div>
-        <DataTable rows={filteredRows} setDeleteOpen={setDeleteOpen} setModalOpen={setModalOpen} />
+        <DataTable loading={loading} rows={records} onDelete={openDelete} onEdit={openEdit} />
       </div>
     </div>
   )
 }
 
-function DataTable({ rows, setDeleteOpen, setModalOpen }) {
+function DataTable({ loading, onDelete, onEdit, rows }) {
+  if (loading) return <SkeletonRows />
+
   if (!rows.length) {
     return <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-10 text-center font-bold text-slate-400">No records found.</div>
   }
@@ -1993,23 +2035,24 @@ function DataTable({ rows, setDeleteOpen, setModalOpen }) {
       <table className="w-full min-w-[760px] text-left">
         <thead>
           <tr className="border-b border-white/10 text-xs uppercase tracking-[0.18em] text-slate-500">
-            {['Name', 'Role', 'Project', 'Language', 'Status', 'Score', 'Actions'].map((head) => <th key={head} className="px-4 py-4">{head}</th>)}
+            {['Name', 'Email / ID', 'Role', 'Project', 'Language', 'Status', 'Score', 'Actions'].map((head) => <th key={head} className="px-4 py-4">{head}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={`${row.name}-${row.project}`} className="border-b border-white/5 text-sm font-semibold text-slate-300 hover:bg-white/[0.035]">
+            <tr key={row._id} className="border-b border-white/5 text-sm font-semibold text-slate-300 hover:bg-white/[0.035]">
               <td className="px-4 py-4 font-black text-white">{row.name}</td>
+              <td className="px-4 py-4">{row.emailOrId || '-'}</td>
               <td className="px-4 py-4">{row.role}</td>
-              <td className="px-4 py-4">{row.project}</td>
-              <td className="px-4 py-4">{row.language}</td>
-              <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${statusStyles[row.status]}`}>{row.status}</span></td>
-              <td className="px-4 py-4">{row.score}</td>
+              <td className="px-4 py-4">{row.project || '-'}</td>
+              <td className="px-4 py-4">{row.language || '-'}</td>
+              <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${statusStyles[row.status] || statusStyles.Pending}`}>{row.status}</span></td>
+              <td className="px-4 py-4">{row.score || '-'}</td>
               <td className="px-4 py-4">
                 <div className="flex gap-2">
                   <button className="table-icon"><Eye size={15} /></button>
-                  <button className="table-icon" onClick={() => setModalOpen(true)}><Edit3 size={15} /></button>
-                  <button className="table-icon text-rose-300" onClick={() => setDeleteOpen(true)}><Trash2 size={15} /></button>
+                  <button className="table-icon" onClick={() => onEdit(row)}><Edit3 size={15} /></button>
+                  <button className="table-icon text-rose-300" onClick={() => onDelete(row)}><Trash2 size={15} /></button>
                 </div>
               </td>
             </tr>
@@ -2017,7 +2060,7 @@ function DataTable({ rows, setDeleteOpen, setModalOpen }) {
         </tbody>
       </table>
       <div className="mt-5 flex items-center justify-between text-sm font-semibold text-slate-500">
-        <p>Showing 1-6 of 48 records</p>
+        <p>Showing {rows.length} record{rows.length === 1 ? '' : 's'}</p>
         <div className="flex gap-2">
           <button className="rounded-full bg-white/[0.06] px-4 py-2">Prev</button>
           <button className="rounded-full bg-cyan-300 px-4 py-2 text-slate-950">1</button>
@@ -2028,24 +2071,71 @@ function DataTable({ rows, setDeleteOpen, setModalOpen }) {
   )
 }
 
-function ModalForm({ activeItem, isOpen, notify, onClose }) {
+const defaultAdminRecordForm = {
+  name: '',
+  emailOrId: '',
+  role: 'Vendor',
+  project: '',
+  language: '',
+  status: 'Active',
+  score: '',
+  notes: '',
+}
+
+function ModalForm({ activeItem, editingRecord, isOpen, notify, onClose, onSaved }) {
+  const [form, setForm] = useState(defaultAdminRecordForm)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    setForm(editingRecord ? { ...defaultAdminRecordForm, ...editingRecord } : defaultAdminRecordForm)
+  }, [editingRecord, isOpen])
+
+  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }))
+
+  const save = async () => {
+    if (!form.name.trim()) return notify('Name is required')
+
+    setSaving(true)
+    try {
+      const isUpdate = Boolean(editingRecord?._id)
+      const response = await fetch(isUpdate ? API_ENDPOINTS.adminRecords.update(activeItem.id, editingRecord._id) : API_ENDPOINTS.adminRecords.create(activeItem.id), {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(form),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Unable to save record')
+      notify(isUpdate ? 'Record updated' : 'Record saved successfully')
+      onSaved()
+      onClose()
+    } catch (error) {
+      notify(error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 px-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[#071024] p-6 shadow-glass" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-white">Add / Edit {activeItem.label}</h2>
+              <h2 className="text-2xl font-black text-white">{editingRecord ? 'Edit' : 'Add'} {activeItem.label}</h2>
               <button onClick={onClose} className="text-slate-400"><X /></button>
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <input className="admin-input" placeholder="Name" />
-              <input className="admin-input" placeholder="Email / ID" />
-              <select className="admin-input"><option>Admin</option><option>Manager</option><option>Vendor</option><option>QC Team</option></select>
-              <select className="admin-input"><option>Active</option><option>Pending</option><option>Inactive</option></select>
-              <textarea className="admin-input min-h-28 sm:col-span-2" placeholder="Notes / Remarks" />
+              <input className="admin-input" placeholder="Name" value={form.name} onChange={(event) => update('name', event.target.value)} />
+              <input className="admin-input" placeholder="Email / ID" value={form.emailOrId} onChange={(event) => update('emailOrId', event.target.value)} />
+              <select className="admin-input" value={form.role} onChange={(event) => update('role', event.target.value)}><option>Admin</option><option>Manager</option><option>Vendor</option><option>QC Team</option></select>
+              <select className="admin-input" value={form.status} onChange={(event) => update('status', event.target.value)}><option>Active</option><option>Pending</option><option>Approved</option><option>Rejected</option><option>Inactive</option></select>
+              <input className="admin-input" placeholder="Project" value={form.project} onChange={(event) => update('project', event.target.value)} />
+              <input className="admin-input" placeholder="Language" value={form.language} onChange={(event) => update('language', event.target.value)} />
+              <input className="admin-input" placeholder="Score / Amount" value={form.score} onChange={(event) => update('score', event.target.value)} />
+              <textarea className="admin-input min-h-28 sm:col-span-2" placeholder="Notes / Remarks" value={form.notes} onChange={(event) => update('notes', event.target.value)} />
             </div>
-            <button onClick={() => { notify('Record saved successfully'); onClose() }} className="admin-primary-btn mt-6 w-full justify-center">Save Record</button>
+            <button disabled={saving} onClick={save} className="admin-primary-btn mt-6 w-full justify-center">{saving ? 'Saving...' : 'Save Record'}</button>
           </motion.div>
         </motion.div>
       )}
@@ -2053,7 +2143,27 @@ function ModalForm({ activeItem, isOpen, notify, onClose }) {
   )
 }
 
-function ConfirmDialog({ isOpen, notify, onClose }) {
+function ConfirmDialog({ activeItem, deleteRecord, isOpen, notify, onClose, onDeleted }) {
+  const [deleting, setDeleting] = useState(false)
+
+  const deleteSelectedRecord = async () => {
+    if (!deleteRecord?._id) return onClose()
+
+    setDeleting(true)
+    try {
+      const response = await fetch(API_ENDPOINTS.adminRecords.delete(activeItem.id, deleteRecord._id), { method: 'DELETE', headers: authHeaders() })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Unable to delete record')
+      notify('Record deleted from MongoDB')
+      onDeleted()
+      onClose()
+    } catch (error) {
+      notify(error.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -2061,10 +2171,10 @@ function ConfirmDialog({ isOpen, notify, onClose }) {
           <motion.div className="max-w-md rounded-[2rem] border border-white/10 bg-[#071024] p-6 text-center shadow-glass" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
             <Shield className="mx-auto text-rose-300" size={44} />
             <h2 className="mt-4 text-2xl font-black text-white">Delete this record?</h2>
-            <p className="mt-2 text-slate-400">This confirmation protects admin records before deletion.</p>
+            <p className="mt-2 text-slate-400">{deleteRecord?.name || 'This record'} will be permanently deleted from MongoDB.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <button onClick={onClose} className="admin-secondary-btn justify-center">Cancel</button>
-              <button onClick={() => { notify('Record deleted'); onClose() }} className="rounded-full bg-rose-400 px-5 py-3 font-black text-white">Delete</button>
+              <button disabled={deleting} onClick={deleteSelectedRecord} className="rounded-full bg-rose-400 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-70">{deleting ? 'Deleting...' : 'Delete'}</button>
             </div>
           </motion.div>
         </motion.div>

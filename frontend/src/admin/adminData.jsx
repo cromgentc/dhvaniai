@@ -99,15 +99,6 @@ export const productivityData = [
   { day: 'Sun', tasks: 290 },
 ]
 
-export const tableRows = [
-  { name: 'Aarav Sharma', role: 'Admin', project: 'Hindi OCR', language: 'Hindi', status: 'Active', score: '98%' },
-  { name: 'Priya Mehta', role: 'Manager', project: 'Speech Data', language: 'English', status: 'Completed', score: '91%' },
-  { name: 'Nova Vendor', role: 'Vendor', project: 'Image Collection', language: 'Tamil', status: 'Pending', score: '84%' },
-  { name: 'QC Team North', role: 'QC Team', project: 'Document Review', language: 'Marathi', status: 'Approved', score: '96%' },
-  { name: 'Rohan Verma', role: 'Vendor', project: 'Script Recording', language: 'Telugu', status: 'Rejected', score: '62%' },
-  { name: 'DataField Ops', role: 'Vendor', project: 'Multilingual Data', language: 'Bengali', status: 'Inactive', score: '71%' },
-]
-
 export const pageCopy = {
   leads: ['Search submitted leads', 'Filter by status', 'Update lead status', 'Delete lead', 'Export leads', 'Lead detail modal'],
   'legal-pages': ['Create legal pages', 'SEO fields', 'Publish controls', 'Preview content', 'Draft workflow', 'Delete confirmation'],
