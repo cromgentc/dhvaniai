@@ -1813,9 +1813,9 @@ function TopHeader({ activeItem, adminUser, darkMode, onCreate, onLogout, query,
           <Search size={18} className="text-slate-500" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" placeholder="Search users, vendors, projects..." />
         </div>
-        <button onClick={onCreate} className="hidden rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 shadow-cyan sm:inline-flex">
+        {displayRole === 'Admin' && <button onClick={onCreate} className="hidden rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 shadow-cyan sm:inline-flex">
           Create Project
-        </button>
+        </button>}
         <IconButton icon={Bell} />
         <IconButton icon={MessageSquare} />
         <button className="admin-icon-btn" onClick={() => setDarkMode((value) => !value)}>
