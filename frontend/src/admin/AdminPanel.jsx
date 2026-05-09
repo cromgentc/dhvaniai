@@ -176,10 +176,12 @@ function getAdminUser() {
 }
 
 function canAccessPage(role, pageId) {
+  const managerHierarchyPages = ['dashboard', 'users', 'vendors', 'dc-team', 'projects', 'logout']
+
   if (pageId === 'logout') return true
-  if (pageId === 'settings') return role === 'Admin'
-  if (pageId === 'payments') return role === 'Admin' || role === 'Manager'
-  return true
+  if (role === 'Admin') return true
+  if (['Manager', 'Vendor', 'QC Team'].includes(role)) return managerHierarchyPages.includes(pageId)
+  return pageId === 'dashboard'
 }
 
 function getAllowedSidebarItems(role) {
