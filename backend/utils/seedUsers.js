@@ -8,10 +8,25 @@ const defaultUsers = [
 ]
 
 export async function seedUsers() {
+  const syncDefaultPasswords = process.env.SYNC_DEFAULT_USER_PASSWORDS === 'true'
+
   await Promise.all(
     defaultUsers.map(async (item) => {
-      const exists = await User.findOne({ email: item.email })
-      if (exists) return
+      const existingUser = await User.findOne({ email: item.email }).select('+passwordHash +passwordSalt')
+
+      if (existingUser) {
+        existingUser.name = item.name
+        existingUser.role = item.role
+        existingUser.status = 'Active'
+        existingUser.updatedBy = 'system'
+
+        if (syncDefaultPasswords) {
+          existingUser.setPassword(item.password)
+        }
+
+        await existingUser.save()
+        return
+      }
 
       const user = new User({
         name: item.name,

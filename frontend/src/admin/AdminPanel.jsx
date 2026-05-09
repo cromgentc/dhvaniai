@@ -1591,7 +1591,7 @@ function UserFormModal({ editingUser, isOpen, notify, onClose, onSaved }) {
 
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('admin@dhvani.ai')
-  const [password, setPassword] = useState('password')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { contact } = usePublicSettings()
