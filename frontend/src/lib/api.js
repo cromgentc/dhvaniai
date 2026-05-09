@@ -7,10 +7,6 @@ function normalizeApiBaseUrl(value) {
 
 export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl || fallbackApiUrl)
 
-if (!API_BASE_URL && import.meta.env.PROD) {
-  console.warn('VITE_API_URL is not configured. Deploy the backend publicly and set VITE_API_URL to that backend URL.')
-}
-
 const apiPath = (path) => `${API_BASE_URL}${path}`
 
 export const API_ENDPOINTS = {

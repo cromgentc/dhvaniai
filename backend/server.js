@@ -1,6 +1,7 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
+import { fileURLToPath, pathToFileURL } from 'url'
 import connectDB from './config/db.js'
 import adminSettingsRoutes from './routes/adminSettingsRoutes.js'
 import applicationRoutes from './routes/applicationRoutes.js'
@@ -15,9 +16,9 @@ import { seedLegalPages } from './utils/seedLegalPages.js'
 import { seedSettings } from './utils/seedSettings.js'
 import { seedUsers } from './utils/seedUsers.js'
 
-dotenv.config()
+dotenv.config({ path: fileURLToPath(new URL('./.env', import.meta.url)) })
 
-const app = express()
+export const app = express()
 const port = process.env.PORT || 4000
 const defaultAllowedOrigins = ['http://127.0.0.1:5173', 'http://localhost:5173', 'https://dhvaniai.vercel.app']
 const allowedOrigins = (process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',') : defaultAllowedOrigins)
@@ -65,17 +66,34 @@ app.use((error, req, res, next) => {
   res.status(500).json({ success: false, message: 'Internal server error' })
 })
 
-connectDB()
-  .then(async () => {
+let backendReadyPromise
+
+export function initializeBackend() {
+  if (!backendReadyPromise) {
+    backendReadyPromise = connectDB().then(async () => {
     await seedLegalPages()
     await seedJobs()
     await seedSettings()
     await seedUsers()
+    })
+  }
+
+  return backendReadyPromise
+}
+
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isDirectRun && process.env.VERCEL !== '1') {
+  initializeBackend()
+    .then(() => {
     app.listen(port, () => {
       console.log(`Dhvani backend running at http://localhost:${port}`)
     })
   })
-  .catch((error) => {
-    console.error('MongoDB connection failed:', error.message)
-    process.exit(1)
-  })
+    .catch((error) => {
+      console.error('MongoDB connection failed:', error.message)
+      process.exit(1)
+    })
+}
+
+export default app
