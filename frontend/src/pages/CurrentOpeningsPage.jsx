@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, BriefcaseBusiness, CalendarDays, CheckCircle2, Clock, DollarSign, FileText, Loader2, MapPin, Search, Send, Sparkles, Users, X } from 'lucide-react'
+import { API_BASE_URL } from '../lib/api.js'
 
 const initialFilters = { q: '', department: '', jobType: '', location: '', experienceLevel: '', workMode: '', status: '' }
 const initialApplication = {
@@ -32,9 +33,8 @@ function CurrentOpeningsPage() {
   const fetchJobs = async () => {
     setLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
       const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
-      const response = await fetch(`${apiUrl}/api/jobs/open?${params.toString()}`)
+      const response = await fetch(`${API_BASE_URL}/api/jobs/open?${params.toString()}`)
       const result = await response.json()
       if (!response.ok) throw new Error(result.message || 'Unable to fetch jobs')
       setJobs(result.data || [])
@@ -241,8 +241,7 @@ function ApplicationModal({ job, notify, onClose }) {
 
     setLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/jobs/apply`, {
+      const response = await fetch(`${API_BASE_URL}/api/jobs/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, jobId: job._id }),

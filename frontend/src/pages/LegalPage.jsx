@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, ChevronDown, FileText, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { legalFaqs } from '../data/legalPages.js'
+import { API_BASE_URL } from '../lib/api.js'
 
 function LegalPage({ page: staticPage, slug }) {
   const [openFaq, setOpenFaq] = useState(0)
@@ -17,8 +18,7 @@ function LegalPage({ page: staticPage, slug }) {
       setNotFound(false)
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-        const response = await fetch(`${apiUrl}/api/legal/${slug}`)
+        const response = await fetch(`${API_BASE_URL}/api/legal/${slug}`)
         const result = await response.json()
 
         if (!response.ok) {

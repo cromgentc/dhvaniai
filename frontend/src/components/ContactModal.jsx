@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, Facebook, Github, Instagram, Linkedin, Loader2, Mail, MapPin, MessageCircle, Phone, Send, Twitter, X, Youtube } from 'lucide-react'
 import { usePublicSettings } from '../hooks/usePublicSettings.js'
+import { API_BASE_URL } from '../lib/api.js'
 
 const socialIcons = { Facebook, Github, Instagram, Linkedin, MessageCircle, Send, Twitter, Youtube }
 
@@ -136,8 +137,7 @@ function ContactModal({ initialType = 'enterprise', isOpen, onClose }) {
     setLoading(true)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/leads/create`, {
+      const response = await fetch(`${API_BASE_URL}/api/leads/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, source: copy.source }),

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../lib/api.js'
 
 export const defaultContactSettings = {
   email: 'hello@dhvani.ai',
@@ -19,10 +20,9 @@ export function usePublicSettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
         const [contactResponse, socialResponse] = await Promise.all([
-          fetch(`${apiUrl}/api/settings/contact`),
-          fetch(`${apiUrl}/api/settings/social-links`),
+          fetch(`${API_BASE_URL}/api/settings/contact`),
+          fetch(`${API_BASE_URL}/api/settings/social-links`),
         ])
         const [contactResult, socialResult] = await Promise.all([contactResponse.json(), socialResponse.json()])
         if (contactResponse.ok && contactResult.data) {
